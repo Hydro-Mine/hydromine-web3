@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -10,7 +9,6 @@
     * {
       box-sizing: border-box;
     }
-
     body {
       margin: 0;
       font-family: 'Orbitron', sans-serif;
@@ -22,7 +20,6 @@
       min-height: 100vh;
       padding: 20px;
     }
-
     .container {
       background: rgba(15, 23, 42, 0.85);
       border: 1px solid #00f7ff44;
@@ -32,13 +29,10 @@
       width: 100%;
       box-shadow: 0 0 20px #00f7ff33;
     }
-
-    h1,
-    h2 {
+    h1, h2 {
       text-align: center;
       color: #00f7ff;
     }
-
     button {
       background: #00f7ff;
       color: #000;
@@ -51,11 +45,9 @@
       width: 100%;
       margin-top: 10px;
     }
-
     button:hover {
       background: #00e6e6;
     }
-
     input {
       width: 100%;
       padding: 10px;
@@ -65,17 +57,9 @@
       color: #fff;
       margin-top: 10px;
     }
-
     .section {
       margin-bottom: 30px;
     }
-
-    #status {
-      font-size: 0.9em;
-      color: #facc15;
-      text-align: center;
-    }
-
     .output {
       background: #0f263a;
       padding: 12px;
@@ -83,9 +67,20 @@
       margin-top: 10px;
       color: #aff;
     }
+    .stats {
+      font-size: 0.95em;
+      background: #122c44;
+      padding: 10px;
+      border-radius: 8px;
+      margin-top: 10px;
+    }
+    #status {
+      font-size: 0.9em;
+      color: #facc15;
+      text-align: center;
+    }
   </style>
 </head>
-
 <body>
   <div class="container">
     <h1>HydroMine Web3</h1>
@@ -118,14 +113,25 @@
       <h2>🔒 Vault</h2>
       <div id="vault-info" class="output">---</div>
     </div>
+
+    <div class="section">
+      <h2>📊 Estatísticas</h2>
+      <div class="stats" id="stats">
+        Circulação: 10,500,000 HDM<br/>
+        Supply total: 210,000,000 HDM<br/>
+        Valor unitário (estimado): US$ 0.01<br/>
+        Valor de mercado: US$ 2,100,000<br/>
+        Transações diárias: 124 (testnet)
+      </div>
+    </div>
   </div>
 
   <script type="module">
     import { BrowserProvider, Contract, parseUnits } from "https://cdn.jsdelivr.net/npm/ethers@6.7.0/dist/ethers.min.js";
 
-    const tokenAddress = "0x49CA6B9d61d2bc5Ce9F0e3823C4264963043f194";
-    const distributorAddress = "0x1b510Ec1d2709F05c8717233967bb12273f6a854";
-    const vaultAddress = "0xBAFE2d2108BC6615a05Ae696A57016A82261aA24";
+    const tokenAddress = "0xF20125e4D3b912aB3c71680d2f479924D426F79F";
+    const distributorAddress = "0xB84658Cd5DCb4E02273F887eA2Fc267F399D3010";
+    const vaultAddress = "0xe4b2443A168124fC6Ec52C9e6B46dAEF32b058f1";
 
     const tokenABI = [
       "function balanceOf(address) view returns (uint256)",
@@ -145,13 +151,7 @@
       if (typeof window.ethereum !== "undefined" && window.ethereum.isMetaMask) {
         try {
           await window.ethereum.request({ method: "eth_requestAccounts" });
-          if (window.ethereum.isMetaMask) {
-            provider = new BrowserProvider(window.ethereum);
-          } else {
-            alert("MetaMask não detectada como provedor padrão.");
-            return;
-          }
-
+          provider = new BrowserProvider(window.ethereum);
           signer = await provider.getSigner();
           userAddress = await signer.getAddress();
 
@@ -206,11 +206,9 @@
       document.getElementById("vault-info").innerText = `Lastro atual: ${reserve / 1e18} HDM`;
     }
 
-    // Exporta para escopo global
     window.connectWallet = connectWallet;
     window.transferTokens = transferTokens;
     window.claimRewards = claimRewards;
   </script>
 </body>
-
 </html>
