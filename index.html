@@ -4,86 +4,116 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>HydroMine Web3</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap" rel="stylesheet" />
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 20px;
-      background: #0f172a;
-      color: #fff;
+    * {
+      box-sizing: border-box;
     }
-    h1 {
-      color: #00f7ff;
+    body {
+      margin: 0;
+      font-family: 'Orbitron', sans-serif;
+      background: linear-gradient(to right, #0f172a, #0a1e3a);
+      color: #e0f7ff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
     }
     .container {
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid #00f7ff44;
+      border-radius: 16px;
+      padding: 30px;
       max-width: 600px;
-      margin: auto;
+      width: 100%;
+      box-shadow: 0 0 20px #00f7ff33;
+    }
+    h1, h2 {
+      text-align: center;
+      color: #00f7ff;
     }
     button {
-      padding: 10px 15px;
-      margin-top: 10px;
-      background-color: #00f7ff;
+      background: #00f7ff;
       color: #000;
       border: none;
-      border-radius: 8px;
+      padding: 12px 20px;
+      border-radius: 10px;
+      font-weight: bold;
       cursor: pointer;
+      transition: 0.3s;
+      width: 100%;
+      margin-top: 10px;
+    }
+    button:hover {
+      background: #00e6e6;
     }
     input {
       width: 100%;
       padding: 10px;
-      margin: 5px 0;
-      border-radius: 5px;
-      border: 1px solid #ccc;
+      border-radius: 8px;
+      border: 1px solid #00f7ff44;
+      background: #0f1c2e;
+      color: #fff;
+      margin-top: 10px;
     }
     .section {
       margin-bottom: 30px;
     }
     #status {
-      font-weight: bold;
+      font-size: 0.9em;
       color: #facc15;
+      text-align: center;
+    }
+    .output {
+      background: #0f263a;
+      padding: 12px;
+      border-radius: 8px;
+      margin-top: 10px;
+      color: #aff;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>HydroMine dApp</h1>
+    <h1>HydroMine Web3</h1>
 
     <div class="section">
-      <button onclick="connectWallet()">Conectar carteira</button>
-      <p id="wallet-address"></p>
-      <p id="status"></p>
+      <button onclick="connectWallet()">🔌 Conectar carteira</button>
+      <div id="wallet-address" class="output"></div>
+      <div id="status"></div>
     </div>
 
     <div class="section">
-      <h2>Saldo de HDMToken</h2>
-      <p id="token-balance">Carregando...</p>
+      <h2>💰 Seu saldo de HDM</h2>
+      <div id="token-balance" class="output">---</div>
     </div>
 
     <div class="section">
-      <h2>Transferir HDM</h2>
-      <input type="text" id="toAddress" placeholder="Endereço destino" />
-      <input type="number" id="amount" placeholder="Quantidade" />
+      <h2>📤 Transferir HDM</h2>
+      <input type="text" id="toAddress" placeholder="Endereço de destino" />
+      <input type="number" id="amount" placeholder="Quantidade de HDM" />
       <button onclick="transferTokens()">Enviar</button>
     </div>
 
     <div class="section">
-      <h2>Distribuição de Recompensas</h2>
-      <p id="eligible-status">Verificando...</p>
-      <button onclick="claimRewards()">Solicitar Recompensa</button>
+      <h2>🎯 Recompensas</h2>
+      <div id="eligible-status" class="output">---</div>
+      <button onclick="claimRewards()">Solicitar recompensa</button>
     </div>
 
     <div class="section">
-      <h2>Informativo Vault</h2>
-      <p id="vault-info">Consultando...</p>
+      <h2>🔒 Vault</h2>
+      <div id="vault-info" class="output">---</div>
     </div>
   </div>
 
   <script type="module">
     import { BrowserProvider, Contract, parseUnits } from "https://cdn.jsdelivr.net/npm/ethers@6.7.0/dist/ethers.min.js";
 
-    const tokenAddress = "0x49CA6B9d61d2bc5Ce9F0e3823C4264963043f194";
-    const distributorAddress = "0x1b510Ec1d2709F05c8717233967bb12273f6a854";
-    const vaultAddress = "0xBAFE2d2108BC6615a05Ae696A57016A82261aA24";
+    const tokenAddress = "<ENDERECO_HDMToken>";
+    const distributorAddress = "<ENDERECO_HOLDERDISTRIBUTOR>";
+    const vaultAddress = "<ENDERECO_RESERVEVAULT>";
 
     const tokenABI = [
       "function balanceOf(address) view returns (uint256)",
@@ -99,29 +129,28 @@
 
     let provider, signer, userAddress;
 
-async function connectWallet() {
-  if (typeof window.ethereum !== "undefined" && window.ethereum.isMetaMask) {
-    try {
-      await window.ethereum.request({ method: "eth_requestAccounts" });
+    async function connectWallet() {
+      if (typeof window.ethereum !== "undefined" && window.ethereum.isMetaMask) {
+        try {
+          await window.ethereum.request({ method: "eth_requestAccounts" });
+          provider = new BrowserProvider(window.ethereum);
+          signer = await provider.getSigner();
+          userAddress = await signer.getAddress();
 
-      provider = new BrowserProvider(window.ethereum);
-      signer = await provider.getSigner();
-      userAddress = await signer.getAddress();
+          document.getElementById("wallet-address").innerText = `Carteira: ${userAddress}`;
+          document.getElementById("status").innerText = "Conectado com sucesso.";
 
-      document.getElementById("wallet-address").innerText = `Carteira conectada: ${userAddress}`;
-      document.getElementById("status").innerText = "Conectado com sucesso.";
-
-      loadTokenBalance();
-      checkEligibility();
-      loadVault();
-    } catch (err) {
-      console.error("Erro ao conectar:", err);
-      document.getElementById("status").innerText = "Erro ao conectar: " + err.message;
+          loadTokenBalance();
+          checkEligibility();
+          loadVault();
+        } catch (err) {
+          console.error("Erro ao conectar:", err);
+          document.getElementById("status").innerText = "Erro: " + err.message;
+        }
+      } else {
+        document.getElementById("status").innerText = "MetaMask não detectada. Instale ou ative para continuar.";
+      }
     }
-  } else {
-    document.getElementById("status").innerText = "MetaMask não detectada. Por favor, instale ou ative.";
-  }
-}
 
     async function loadTokenBalance() {
       const token = new Contract(tokenAddress, tokenABI, provider);
@@ -143,7 +172,7 @@ async function connectWallet() {
     async function checkEligibility() {
       const contract = new Contract(distributorAddress, distributorABI, provider);
       const eligible = await contract.isEligible(userAddress);
-      document.getElementById("eligible-status").innerText = eligible ? "Você é elegível para receber recompensas." : "Você não tem saldo mínimo para receber recompensas.";
+      document.getElementById("eligible-status").innerText = eligible ? "Você é elegível para recompensas." : "Saldo insuficiente para recompensas (min: 10.000 HDM).";
     }
 
     async function claimRewards() {
@@ -158,6 +187,11 @@ async function connectWallet() {
       const reserve = await contract.getReserveBalance();
       document.getElementById("vault-info").innerText = `Lastro atual: ${reserve / 1e18} HDM`;
     }
+
+    // Exporta para escopo global
+    window.connectWallet = connectWallet;
+    window.transferTokens = transferTokens;
+    window.claimRewards = claimRewards;
   </script>
 </body>
 </html>
