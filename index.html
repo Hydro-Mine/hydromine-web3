@@ -99,11 +99,10 @@
 
     let provider, signer, userAddress;
 
-    async function connectWallet() {
-      if (!window.ethereum || !window.ethereum.isMetaMask) {
-        document.getElementById("status").innerText = "MetaMask não detectada. Por favor, instale ou ative.";
-        return;
-      }
+async function connectWallet() {
+  if (typeof window.ethereum !== "undefined" && window.ethereum.isMetaMask) {
+    try {
+      await window.ethereum.request({ method: "eth_requestAccounts" });
 
       provider = new BrowserProvider(window.ethereum);
       signer = await provider.getSigner();
@@ -115,7 +114,14 @@
       loadTokenBalance();
       checkEligibility();
       loadVault();
+    } catch (err) {
+      console.error("Erro ao conectar:", err);
+      document.getElementById("status").innerText = "Erro ao conectar: " + err.message;
     }
+  } else {
+    document.getElementById("status").innerText = "MetaMask não detectada. Por favor, instale ou ative.";
+  }
+}
 
     async function loadTokenBalance() {
       const token = new Contract(tokenAddress, tokenABI, provider);
