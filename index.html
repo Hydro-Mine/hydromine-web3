@@ -3,101 +3,154 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>HydroMine Web3 Portal</title>
-  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+  <title>HydroMine Web3</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #0c0c0c;
-      color: #e0e0e0;
-      padding: 2rem;
-      max-width: 800px;
+      margin: 0;
+      padding: 20px;
+      background: #0f172a;
+      color: #fff;
+    }
+    h1 {
+      color: #00f7ff;
+    }
+    .container {
+      max-width: 600px;
       margin: auto;
     }
     button {
-      padding: 0.5rem 1rem;
-      background: #00ffc3;
-      border: none;
+      padding: 10px 15px;
+      margin-top: 10px;
+      background-color: #00f7ff;
       color: #000;
+      border: none;
+      border-radius: 8px;
       cursor: pointer;
-      margin-top: 1rem;
     }
     input {
-      padding: 0.5rem;
-      margin: 0.5rem 0;
       width: 100%;
+      padding: 10px;
+      margin: 5px 0;
+      border-radius: 5px;
+      border: 1px solid #ccc;
     }
     .section {
-      margin-bottom: 2rem;
+      margin-bottom: 30px;
+    }
+    #status {
+      font-weight: bold;
+      color: #facc15;
     }
   </style>
 </head>
 <body>
-  <h1>HydroMine Web3 Portal</h1>
+  <div class="container">
+    <h1>HydroMine dApp</h1>
 
-  <div class="section">
-    <button onclick="connectWallet()">🔗 Conectar Carteira</button>
-    <p id="walletAddress">Carteira: Não conectada</p>
+    <div class="section">
+      <button onclick="connectWallet()">Conectar carteira</button>
+      <p id="wallet-address"></p>
+      <p id="status"></p>
+    </div>
+
+    <div class="section">
+      <h2>Saldo de HDMToken</h2>
+      <p id="token-balance">Carregando...</p>
+    </div>
+
+    <div class="section">
+      <h2>Transferir HDM</h2>
+      <input type="text" id="toAddress" placeholder="Endereço destino" />
+      <input type="number" id="amount" placeholder="Quantidade" />
+      <button onclick="transferTokens()">Enviar</button>
+    </div>
+
+    <div class="section">
+      <h2>Distribuição de Recompensas</h2>
+      <p id="eligible-status">Verificando...</p>
+      <button onclick="claimRewards()">Solicitar Recompensa</button>
+    </div>
+
+    <div class="section">
+      <h2>Informativo Vault</h2>
+      <p id="vault-info">Consultando...</p>
+    </div>
   </div>
 
-  <div class="section">
-    <h2>🔍 Consultar Saldo de HDM</h2>
-    <input type="text" id="checkAddress" placeholder="Endereço a consultar" />
-    <button onclick="checkBalance()">Consultar</button>
-    <p id="balanceResult">Saldo: -</p>
-  </div>
+  <script type="module">
+    import { BrowserProvider, Contract, parseUnits } from "https://cdn.jsdelivr.net/npm/ethers@6.7.0/dist/ethers.min.js";
 
-  <div class="section">
-    <h2>📤 Enviar HDM</h2>
-    <input type="text" id="recipient" placeholder="Endereço de destino" />
-    <input type="text" id="amount" placeholder="Quantidade em HDM" />
-    <button onclick="sendTokens()">Enviar</button>
-    <p id="txResult"></p>
-  </div>
+    const tokenAddress = "<ENDERECO_HDMToken>";
+    const distributorAddress = "<ENDERECO_HOLDERDISTRIBUTOR>";
+    const vaultAddress = "<ENDERECO_RESERVEVAULT>";
 
-  <script>
-    const tokenAddress = "0x49CA6B9d61d2bc5Ce9F0e3823C4264963043f194";
     const tokenABI = [
       "function balanceOf(address) view returns (uint256)",
-      "function transfer(address to, uint256 amount) returns (bool)"
+      "function transfer(address,uint256) returns (bool)"
+    ];
+    const distributorABI = [
+      "function isEligible(address) view returns (bool)",
+      "function distribute()"
+    ];
+    const vaultABI = [
+      "function getReserveBalance() view returns (uint256)"
     ];
 
-    let signer;
+    let provider, signer, userAddress;
 
     async function connectWallet() {
-      if (window.ethereum) {
-        await window.ethereum.request({ method: "eth_requestAccounts" });
-        const provider = new ethers.providers.Web3Provider(window.ethereum);
-        signer = provider.getSigner();
-        const address = await signer.getAddress();
-        document.getElementById("walletAddress").innerText = `Carteira: ${address}`;
-      } else {
-        alert("MetaMask não detectado.");
+      if (!window.ethereum || !window.ethereum.isMetaMask) {
+        document.getElementById("status").innerText = "MetaMask não detectada. Por favor, instale ou ative.";
+        return;
       }
+
+      provider = new BrowserProvider(window.ethereum);
+      signer = await provider.getSigner();
+      userAddress = await signer.getAddress();
+
+      document.getElementById("wallet-address").innerText = `Carteira conectada: ${userAddress}`;
+      document.getElementById("status").innerText = "Conectado com sucesso.";
+
+      loadTokenBalance();
+      checkEligibility();
+      loadVault();
     }
 
-    async function checkBalance() {
-      const addr = document.getElementById("checkAddress").value;
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
-      const contract = new ethers.Contract(tokenAddress, tokenABI, provider);
-      try {
-        const balance = await contract.balanceOf(addr);
-        document.getElementById("balanceResult").innerText = `Saldo: ${ethers.utils.formatUnits(balance, 18)} HDM`;
-      } catch (err) {
-        alert("Erro ao consultar saldo. Verifique o endereço.");
-      }
+    async function loadTokenBalance() {
+      const token = new Contract(tokenAddress, tokenABI, provider);
+      const balance = await token.balanceOf(userAddress);
+      document.getElementById("token-balance").innerText = `${balance / 1e18} HDM`;
     }
 
-    async function sendTokens() {
-      const to = document.getElementById("recipient").value;
+    async function transferTokens() {
+      const to = document.getElementById("toAddress").value;
       const amount = document.getElementById("amount").value;
-      const contract = new ethers.Contract(tokenAddress, tokenABI, signer);
-      try {
-        const tx = await contract.transfer(to, ethers.utils.parseUnits(amount, 18));
-        document.getElementById("txResult").innerText = `Transação enviada: ${tx.hash}`;
-      } catch (err) {
-        document.getElementById("txResult").innerText = `Erro: ${err.message}`;
-      }
+
+      const token = new Contract(tokenAddress, tokenABI, signer);
+      const tx = await token.transfer(to, parseUnits(amount, 18));
+      await tx.wait();
+      alert("Transferência realizada com sucesso.");
+      loadTokenBalance();
+    }
+
+    async function checkEligibility() {
+      const contract = new Contract(distributorAddress, distributorABI, provider);
+      const eligible = await contract.isEligible(userAddress);
+      document.getElementById("eligible-status").innerText = eligible ? "Você é elegível para receber recompensas." : "Você não tem saldo mínimo para receber recompensas.";
+    }
+
+    async function claimRewards() {
+      const contract = new Contract(distributorAddress, distributorABI, signer);
+      const tx = await contract.distribute();
+      await tx.wait();
+      alert("Recompensa solicitada com sucesso.");
+    }
+
+    async function loadVault() {
+      const contract = new Contract(vaultAddress, vaultABI, provider);
+      const reserve = await contract.getReserveBalance();
+      document.getElementById("vault-info").innerText = `Lastro atual: ${reserve / 1e18} HDM`;
     }
   </script>
 </body>
