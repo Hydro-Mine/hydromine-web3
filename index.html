@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>HydroMine Web3 Portal</title>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #0c0c0c;
+      color: #e0e0e0;
+      padding: 2rem;
+      max-width: 800px;
+      margin: auto;
+    }
+    button {
+      padding: 0.5rem 1rem;
+      background: #00ffc3;
+      border: none;
+      color: #000;
+      cursor: pointer;
+      margin-top: 1rem;
+    }
+    input {
+      padding: 0.5rem;
+      margin: 0.5rem 0;
+      width: 100%;
+    }
+    .section {
+      margin-bottom: 2rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>HydroMine Web3 Portal</h1>
+
+  <div class="section">
+    <button onclick="connectWallet()">🔗 Conectar Carteira</button>
+    <p id="walletAddress">Carteira: Não conectada</p>
+  </div>
+
+  <div class="section">
+    <h2>🔍 Consultar Saldo de HDM</h2>
+    <input type="text" id="checkAddress" placeholder="Endereço a consultar" />
+    <button onclick="checkBalance()">Consultar</button>
+    <p id="balanceResult">Saldo: -</p>
+  </div>
+
+  <div class="section">
+    <h2>📤 Enviar HDM</h2>
+    <input type="text" id="recipient" placeholder="Endereço de destino" />
+    <input type="text" id="amount" placeholder="Quantidade em HDM" />
+    <button onclick="sendTokens()">Enviar</button>
+    <p id="txResult"></p>
+  </div>
+
+  <script>
+    const tokenAddress = "0x49CA6B9d61d2bc5Ce9F0e3823C4264963043f194";
+    const tokenABI = [
+      "function balanceOf(address) view returns (uint256)",
+      "function transfer(address to, uint256 amount) returns (bool)"
+    ];
+
+    let signer;
+
+    async function connectWallet() {
+      if (window.ethereum) {
+        await window.ethereum.request({ method: "eth_requestAccounts" });
+        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        signer = provider.getSigner();
+        const address = await signer.getAddress();
+        document.getElementById("walletAddress").innerText = `Carteira: ${address}`;
+      } else {
+        alert("MetaMask não detectado.");
+      }
+    }
+
+    async function checkBalance() {
+      const addr = document.getElementById("checkAddress").value;
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const contract = new ethers.Contract(tokenAddress, tokenABI, provider);
+      try {
+        const balance = await contract.balanceOf(addr);
+        document.getElementById("balanceResult").innerText = `Saldo: ${ethers.utils.formatUnits(balance, 18)} HDM`;
+      } catch (err) {
+        alert("Erro ao consultar saldo. Verifique o endereço.");
+      }
+    }
+
+    async function sendTokens() {
+      const to = document.getElementById("recipient").value;
+      const amount = document.getElementById("amount").value;
+      const contract = new ethers.Contract(tokenAddress, tokenABI, signer);
+      try {
+        const tx = await contract.transfer(to, ethers.utils.parseUnits(amount, 18));
+        document.getElementById("txResult").innerText = `Transação enviada: ${tx.hash}`;
+      } catch (err) {
+        document.getElementById("txResult").innerText = `Erro: ${err.message}`;
+      }
+    }
+  </script>
+</body>
+</html>
