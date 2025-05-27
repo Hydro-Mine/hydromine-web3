@@ -6,9 +6,7 @@
   <title>HydroMine Web3</title>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap" rel="stylesheet" />
   <style>
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
     body {
       margin: 0;
       font-family: 'Orbitron', sans-serif;
@@ -124,17 +122,26 @@
         Transações diárias: 124 (testnet)
       </div>
     </div>
+
+    <div class="section" id="admin-dashboard" style="display: none;">
+      <h2>🛠️ Painel do Owner</h2>
+      <div class="output" id="admin-info">
+        Validando...
+      </div>
+    </div>
   </div>
 
   <script type="module">
     import { BrowserProvider, Contract, parseUnits } from "https://cdn.jsdelivr.net/npm/ethers@6.7.0/dist/ethers.min.js";
 
-    const tokenAddress = "0xba9C2790604cE026189E198D4C3Df5960A1C0D43";
-    const distributorAddress = "0x2634fb8fbdE47ecc8DcF832b9789d805D395e6E0";
-    const vaultAddress = "0x4b35a270D1175443AeA71aE41df80D11d44Ebbed";
+    const tokenAddress = "0xD646976493ab92D24f5683a020af135E5dbB94fD";
+    const distributorAddress = "0x2e3A3b2E72b81e4A6D26b57a604d1Ed51a284FEE";
+    const vaultAddress = "0x5F854e971B941B995693CE24fB30Db12FA1b6Fb7";
+    const ownerAddress = "0xBAFE2d2108BC6615a05Ae696A57016A82261aA24"; // Owner 
 
     const tokenABI = [
       "function balanceOf(address) view returns (uint256)",
+      "function totalSupply() view returns (uint256)",
       "function transfer(address,uint256) returns (bool)"
     ];
     const distributorABI = [
@@ -161,6 +168,7 @@
           loadTokenBalance();
           checkEligibility();
           loadVault();
+          loadAdminPanel();
         } catch (err) {
           console.error("Erro ao conectar:", err);
           document.getElementById("status").innerText = "Erro: " + err.message;
@@ -204,6 +212,24 @@
       const contract = new Contract(vaultAddress, vaultABI, provider);
       const reserve = await contract.getReserveBalance();
       document.getElementById("vault-info").innerText = `Lastro atual: ${reserve / 1e18} HDM`;
+    }
+
+    async function loadAdminPanel() {
+      if (userAddress.toLowerCase() !== ownerAddress.toLowerCase()) return;
+
+      const token = new Contract(tokenAddress, tokenABI, provider);
+      const totalSupply = await token.totalSupply();
+      const ownerBalance = await token.balanceOf(ownerAddress);
+      const vault = new Contract(vaultAddress, vaultABI, provider);
+      const reserve = await vault.getReserveBalance();
+
+      document.getElementById("admin-dashboard").style.display = "block";
+      document.getElementById("admin-info").innerHTML = `
+        <strong>Supply Total:</strong> ${totalSupply / 1e18} HDM<br/>
+        <strong>Saldo do Owner:</strong> ${ownerBalance / 1e18} HDM<br/>
+        <strong>Saldo no Vault:</strong> ${reserve / 1e18} HDM<br/>
+        <strong>Endereço Owner:</strong> ${ownerAddress}
+      `;
     }
 
     window.connectWallet = connectWallet;
